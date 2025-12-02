@@ -28,9 +28,9 @@ A Kubernetes operator for managing NATS authentication using JWT and token-based
 #### Using Helm (Recommended)
 
 ```bash
-helm repo add nats-auth-operator https://jradikk.github.io/nats-auth-operator
-helm install nats-auth-operator nats-auth-operator/nats-auth-operator \
-  --namespace nats-auth-operator-system \
+helm install nats-auth-operator oci://ghcr.io/jradikk/charts/nats-auth-operator \
+  --version 0.1.0 \
+  --namespace nats-system \
   --create-namespace
 ```
 

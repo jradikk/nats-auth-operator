@@ -21,17 +21,11 @@ kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/ma
 
 ### Install the Chart
 
-Add the Helm repository (once published):
+Install from GitHub Container Registry (OCI):
 
 ```bash
-helm repo add nats-auth-operator https://jradikk.github.io/nats-auth-operator
-helm repo update
-```
-
-Install the chart:
-
-```bash
-helm install nats-auth-operator nats-auth-operator/nats-auth-operator \
+helm install nats-auth-operator oci://ghcr.io/jradikk/charts/nats-auth-operator \
+  --version 0.1.0 \
   --namespace nats-system \
   --create-namespace
 ```
@@ -307,7 +301,8 @@ config:
 ### Upgrade the Chart
 
 ```bash
-helm upgrade nats-auth-operator nats-auth-operator/nats-auth-operator \
+helm upgrade nats-auth-operator oci://ghcr.io/jradikk/charts/nats-auth-operator \
+  --version 0.1.0 \
   --namespace nats-system
 ```
 

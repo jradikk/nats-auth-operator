@@ -1,0 +1,335 @@
+---
+# Stream Publisher User
+# Can publish messages to stream subjects but cannot manage streams
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: stream-publisher
+  namespace: default
+  labels:
+    account: production-streams
+    role: publisher
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  # Publisher permissions: can publish to stream subjects
+  permissions:
+    publishAllow:
+      # Order stream subjects
+      - "orders.created"
+      - "orders.updated"
+      - "orders.completed"
+      - "orders.cancelled"
+      - "orders.failed"
+
+      # Payment stream subjects
+      - "payments.initiated"
+      - "payments.processed"
+      - "payments.completed"
+      - "payments.failed"
+      - "payments.refunded"
+
+      # Event stream subjects
+      - "events.>"
+
+      # Metrics for monitoring
+      - "metrics.publisher.>"
+
+    publishDeny:
+      # Cannot publish to system subjects
+      - "$SYS.>"
+      - "$JS.API.>"  # Cannot use JetStream API directly
+
+    subscribeAllow:
+      # Can subscribe to acknowledgment subjects (for request-reply patterns)
+      - "_INBOX.>"
+
+      # Can subscribe to metrics about own publishes
+      - "metrics.publisher.>"
+
+    subscribeDeny:
+      # Cannot subscribe to stream data (publish-only)
+      - "orders.>"
+      - "payments.>"
+      - "events.>"
+
+      # Cannot access JetStream API
+      - "$JS.>"
+
+---
+# Stream Consumer User
+# Can consume from streams but cannot publish or manage streams
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: stream-consumer
+  namespace: default
+  labels:
+    account: production-streams
+    role: consumer
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  # Consumer permissions: can subscribe and create consumers
+  permissions:
+    publishAllow:
+      # Can publish acknowledgments (required for pull consumers)
+      - "$JS.ACK.>"
+
+      # Can publish to consumer response subjects
+      - "_INBOX.>"
+
+      # Can publish to next request subjects (pull consumers)
+      - "$JS.API.CONSUMER.MSG.NEXT.>"
+
+      # Can publish metrics about consumption
+      - "metrics.consumer.>"
+
+    publishDeny:
+      # Cannot publish to stream subjects
+      - "orders.>"
+      - "payments.>"
+      - "events.>"
+
+    subscribeAllow:
+      # Can subscribe to all stream subjects
+      - "orders.>"
+      - "payments.>"
+      - "events.>"
+
+      # Can access consumer APIs
+      - "$JS.API.CONSUMER.>"
+
+      # Can receive messages from consumers
+      - "_INBOX.>"
+
+      # Can get stream info (read-only)
+      - "$JS.API.STREAM.INFO.>"
+      - "$JS.API.STREAM.MSG.GET.>"
+
+    subscribeDeny:
+      # Cannot access stream management APIs
+      - "$JS.API.STREAM.CREATE.>"
+      - "$JS.API.STREAM.UPDATE.>"
+      - "$JS.API.STREAM.DELETE.>"
+
+---
+# Stream Admin User
+# Full access to manage streams, consumers, and data
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: stream-admin
+  namespace: default
+  labels:
+    account: production-streams
+    role: admin
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  # Admin permissions: full access to JetStream
+  permissions:
+    publishAllow:
+      # Full access to publish to all stream subjects
+      - ">"
+
+    publishDeny: []
+
+    subscribeAllow:
+      # Full access to subscribe to all subjects
+      - ">"
+
+      # Full access to JetStream APIs
+      - "$JS.>"
+      - "$JS.API.>"
+
+    subscribeDeny: []
+
+---
+# Order Processor - Specific to order stream
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: order-processor
+  namespace: default
+  labels:
+    account: production-streams
+    role: processor
+    stream: orders
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  # Permissions specific to order processing
+  permissions:
+    publishAllow:
+      # Can publish order updates
+      - "orders.updated"
+      - "orders.completed"
+      - "orders.failed"
+
+      # Can publish derived events
+      - "events.orders.>"
+
+      # JetStream acknowledgments
+      - "$JS.ACK.>"
+      - "_INBOX.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.>"
+
+    publishDeny: []
+
+    subscribeAllow:
+      # Can only consume from orders stream
+      - "orders.>"
+
+      # Can create consumers on orders stream only
+      - "$JS.API.CONSUMER.CREATE.ORDERS.>"
+      - "$JS.API.CONSUMER.INFO.ORDERS.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.ORDERS.>"
+
+      # Can get order stream info
+      - "$JS.API.STREAM.INFO.ORDERS"
+      - "$JS.API.STREAM.MSG.GET.ORDERS.>"
+
+      # Response subjects
+      - "_INBOX.>"
+
+    subscribeDeny:
+      # Cannot access other streams
+      - "$JS.API.STREAM.CREATE.>"
+      - "$JS.API.STREAM.DELETE.>"
+      - "$JS.API.CONSUMER.CREATE.PAYMENTS.>"
+      - "$JS.API.CONSUMER.CREATE.EVENTS.>"
+
+---
+# Payment Processor - Specific to payment stream
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: payment-processor
+  namespace: default
+  labels:
+    account: production-streams
+    role: processor
+    stream: payments
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  permissions:
+    publishAllow:
+      # Can publish payment status updates
+      - "payments.processed"
+      - "payments.completed"
+      - "payments.failed"
+      - "payments.refunded"
+
+      # Can publish events
+      - "events.payments.>"
+
+      # JetStream acknowledgments
+      - "$JS.ACK.>"
+      - "_INBOX.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.>"
+
+    publishDeny: []
+
+    subscribeAllow:
+      # Can consume from payments stream
+      - "payments.>"
+
+      # Can also consume related order events
+      - "orders.created"
+      - "orders.cancelled"
+
+      # Can create consumers on payments stream
+      - "$JS.API.CONSUMER.CREATE.PAYMENTS.>"
+      - "$JS.API.CONSUMER.INFO.PAYMENTS.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.PAYMENTS.>"
+
+      # Can get payment stream info
+      - "$JS.API.STREAM.INFO.PAYMENTS"
+
+      # Response subjects
+      - "_INBOX.>"
+
+    subscribeDeny:
+      # Cannot manage streams
+      - "$JS.API.STREAM.CREATE.>"
+      - "$JS.API.STREAM.DELETE.>"
+
+---
+# Analytics Consumer - Read-only access to all streams
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: analytics-consumer
+  namespace: default
+  labels:
+    account: production-streams
+    role: analytics
+spec:
+  authConfigRef:
+    name: main
+  authType: jwt
+  accountRef:
+    name: production-streams
+
+  permissions:
+    publishAllow:
+      # Only JetStream acknowledgments
+      - "$JS.ACK.>"
+      - "_INBOX.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.>"
+
+      # Can publish analytics results
+      - "analytics.results.>"
+
+    publishDeny:
+      # Cannot publish to stream subjects
+      - "orders.>"
+      - "payments.>"
+      - "events.>"
+
+    subscribeAllow:
+      # Read-only access to all streams
+      - "orders.>"
+      - "payments.>"
+      - "events.>"
+
+      # Can create consumers (read-only)
+      - "$JS.API.CONSUMER.CREATE.>"
+      - "$JS.API.CONSUMER.INFO.>"
+      - "$JS.API.CONSUMER.MSG.NEXT.>"
+
+      # Can get stream info
+      - "$JS.API.STREAM.INFO.>"
+      - "$JS.API.STREAM.MSG.GET.>"
+
+      # Response subjects
+      - "_INBOX.>"
+
+    subscribeDeny:
+      # Cannot modify streams
+      - "$JS.API.STREAM.CREATE.>"
+      - "$JS.API.STREAM.UPDATE.>"
+      - "$JS.API.STREAM.DELETE.>"
+      - "$JS.API.STREAM.PURGE.>"

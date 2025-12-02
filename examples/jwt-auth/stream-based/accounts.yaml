@@ -1,0 +1,54 @@
+---
+# Production Streams Account
+# Dedicated account for JetStream-based messaging
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAccount
+metadata:
+  name: production-streams
+  namespace: default
+  labels:
+    account: production-streams
+    jetstream: "true"
+spec:
+  authConfigRef:
+    name: main
+    namespace: default
+
+  description: "Production account with JetStream streams for order processing"
+
+  # Account-level resource limits
+  limits:
+    # Connection limits
+    conn: 150
+
+    # Subscription limits
+    subs: 2000
+
+    # Message payload size (10 MB for large payloads)
+    payload: 10485760
+
+    # Data transfer limits (100 GB)
+    data: 107374182400
+
+    # Allow exports for cross-account communication
+    exports: 50
+    imports: 50
+
+    # Allow wildcards in exports
+    wildcardExports: true
+
+    # Note: JetStream-specific limits (like max storage, max streams)
+    # are configured at the NATS server level per account.
+    # These limits are enforced by NATS server, not the operator.
+    #
+    # Example NATS server configuration:
+    # accounts {
+    #   production-streams: {
+    #     jetstream: {
+    #       max_mem: 1GB
+    #       max_file: 10GB
+    #       max_streams: 100
+    #       max_consumers: 1000
+    #     }
+    #   }
+    # }

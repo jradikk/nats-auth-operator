@@ -1,0 +1,141 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nats-auth-operator.fullname" . }}-manager-role
+  labels:
+    {{- include "nats-auth-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsaccounts/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsaccounts/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsauthconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsauthconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsauthconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsusers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - nats.jradikk
+  resources:
+  - natsusers/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nats-auth-operator.fullname" . }}-metrics-reader
+  labels:
+    {{- include "nats-auth-operator.labels" . | nindent 4 }}
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nats-auth-operator.fullname" . }}-proxy-role
+  labels:
+    {{- include "nats-auth-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create

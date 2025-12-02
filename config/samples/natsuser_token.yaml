@@ -1,0 +1,35 @@
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: token-user
+  namespace: default
+spec:
+  # Reference to the NatsAuthConfig
+  authConfigRef:
+    name: token-auth
+    namespace: default
+
+  # Authentication type: token
+  authType: token
+
+  # Username for token-based auth
+  username: "my-app-user"
+
+  # Password configuration
+  passwordFrom:
+    # Generate a random password
+    generate: true
+    # Or reference an existing secret:
+    # secretRef:
+    #   name: "my-password-secret"
+    #   namespace: "default"
+
+  # Permissions
+  permissions:
+    publishAllow:
+      - "app.>"
+    publishDeny: []
+    subscribeAllow:
+      - "app.>"
+    subscribeDeny:
+      - "system.>"

@@ -1,0 +1,114 @@
+---
+# Application User
+# A user for your application to connect to NATS
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: app-user
+  namespace: default
+spec:
+  authConfigRef:
+    name: main
+
+  authType: jwt
+
+  accountRef:
+    name: myapp-account
+
+  username: "app-user"
+
+  # Permissions define what this user can publish and subscribe to
+  permissions:
+    # Subjects this user can publish to
+    publishAllow:
+      - "app.>"          # Application subjects
+      - "$JS.ACK.>"      # JetStream acknowledgments (required for consumers)
+      - "$JS.API.>"      # JetStream API (for stream/consumer management)
+      - "_INBOX.>"       # Request-response patterns
+
+    publishDeny: []
+
+    # Subjects this user can subscribe to
+    subscribeAllow:
+      - "app.>"          # Application subjects
+      - "$JS.API.>"      # JetStream API
+      - "_INBOX.>"       # Inbox subjects for request-response
+
+    subscribeDeny:
+      - "system.>"       # Deny system subjects
+
+---
+# JetStream Consumer User
+# A user specifically for consuming from JetStream streams
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: consumer-user
+  namespace: default
+spec:
+  authConfigRef:
+    name: main
+
+  authType: jwt
+
+  accountRef:
+    name: myapp-account
+
+  username: "consumer-user"
+
+  # Permissions for a JetStream consumer
+  permissions:
+    publishAllow:
+      # Stream-specific acknowledgments (replace 'mystream' with your stream name)
+      - "$JS.ACK.mystream.>"
+      # JetStream API for consumer operations
+      - "$JS.API.CONSUMER.*.mystream.>"
+      # Inbox for responses
+      - "_INBOX.>"
+
+    publishDeny: []
+
+    subscribeAllow:
+      # Stream subjects to consume from
+      - "events.>"
+      # JetStream API for consumer info and message requests
+      - "$JS.API.CONSUMER.*.mystream.>"
+      - "$JS.API.CONSUMER.DURABLE.*.mystream.>"
+      - "$JS.API.STREAM.INFO.mystream"
+      - "$JS.API.STREAM.MSG.GET.mystream"
+      # Inbox for message delivery
+      - "_INBOX.>"
+
+    subscribeDeny:
+      - "system.>"
+
+---
+# Admin User
+# A user with full access to all subjects
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: admin-user
+  namespace: default
+spec:
+  authConfigRef:
+    name: main
+
+  authType: jwt
+
+  accountRef:
+    name: myapp-account
+
+  username: "admin"
+
+  # Full permissions
+  permissions:
+    publishAllow:
+      - ">"  # Allow all publish
+
+    publishDeny: []
+
+    subscribeAllow:
+      - ">"  # Allow all subscribe
+
+    subscribeDeny: []

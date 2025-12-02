@@ -1,0 +1,22 @@
+---
+# NatsAuthConfig for token-based authentication
+# This creates the global authentication configuration in token mode
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAuthConfig
+metadata:
+  name: token-auth
+  namespace: default
+spec:
+  # NATS server URL that clients will use
+  natsURL: "nats://nats.default.svc.cluster.local:4222"
+
+  # Authentication mode: token (username/password)
+  mode: token
+
+  # Where to write the server authentication configuration
+  # This ConfigMap will be mounted by the NATS server
+  serverAuthConfig:
+    name: "nats-token-auth"
+    namespace: "default"
+    key: "auth.conf"
+    type: "ConfigMap"

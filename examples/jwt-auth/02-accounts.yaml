@@ -1,0 +1,102 @@
+---
+# System Account
+# NATS uses this for internal operations (monitoring, events, etc.)
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAccount
+metadata:
+  name: system-account
+  namespace: default
+spec:
+  authConfigRef:
+    name: main
+    namespace: default
+
+  description: "System account for NATS monitoring and internal operations"
+
+  # Resource limits for system account
+  limits:
+    # System account needs fewer connections
+    conn: 10
+
+    # But needs subscriptions for monitoring
+    subs: 100
+
+    # Standard payload size
+    payload: 1048576
+
+    # Unlimited data transfer
+    data: -1
+
+    # System account can export services
+    exports: -1
+
+    # And import from other accounts
+    imports: -1
+
+    # Allow wildcards for system subjects
+    wildcardExports: true
+
+---
+# Application Account
+# For your application services
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAccount
+metadata:
+  name: myapp-account
+  namespace: default
+spec:
+  authConfigRef:
+    name: main
+    namespace: default
+
+  description: "Application account with JetStream enabled"
+
+  # Resource limits for this account
+  limits:
+    # Maximum concurrent connections
+    conn: 100
+
+    # Maximum subscriptions
+    subs: 1000
+
+    # Maximum message payload size (1 GB for large messages)
+    payload: 1073741824
+
+    # Maximum data transfer (unlimited)
+    data: -1
+
+    # Maximum stream/service exports (unlimited for cross-account communication)
+    exports: -1
+
+    # Maximum stream/service imports
+    imports: -1
+
+    # Allow wildcards in exports
+    wildcardExports: true
+
+    # JetStream limits - enables JetStream for this account
+    # These are quota limits - NACK will manage actual streams/consumers within these limits
+    jetstream:
+      # Maximum memory storage across all streams (-1 = unlimited)
+      memoryStorage: -1
+
+      # Maximum disk storage across all streams (-1 = unlimited)
+      diskStorage: -1
+
+      # Maximum number of streams (-1 = unlimited)
+      streams: -1
+
+      # Maximum number of consumers across all streams (-1 = unlimited)
+      consumer: -1
+
+      # Maximum outstanding acks per stream (-1 = unlimited)
+      maxAckPending: -1
+
+      # Max bytes per memory-backed stream (-1 = unlimited)
+      memoryMaxStreamBytes: -1
+
+      # Max bytes per disk-backed stream (-1 = unlimited)
+      diskMaxStreamBytes: -1
+
+      # Require max_bytes to be set when creating streams
+      maxBytesRequired: false

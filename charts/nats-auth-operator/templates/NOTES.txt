@@ -1,0 +1,28 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+The NATS Auth Operator has been deployed successfully.
+
+To get started:
+
+1. Install the CRDs if you haven't already:
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/config/crd/bases/nats.jradikk_natsauthconfigs.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/config/crd/bases/nats.jradikk_natsaccounts.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/config/crd/bases/nats.jradikk_natsusers.yaml
+
+2. Create a NatsAuthConfig resource:
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/examples/jwt-auth/01-auth-config.yaml
+
+3. Create accounts and users:
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/examples/jwt-auth/02-accounts.yaml
+   kubectl apply -f https://raw.githubusercontent.com/jradikk/nats-auth-operator/main/examples/jwt-auth/03-users.yaml
+
+4. Check the operator logs:
+   kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "nats-auth-operator.fullname" . }}-controller-manager -c manager
+
+5. View the generated JWT credentials:
+   kubectl get secret nats-auth-jwts -o yaml
+
+For more information and troubleshooting, visit:
+https://github.com/jradikk/nats-auth-operator

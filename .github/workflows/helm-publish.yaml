@@ -1,0 +1,79 @@
+name: Publish Helm Chart
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  HELM_VERSION: v3.13.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Lint Helm chart
+        run: |
+          helm lint charts/nats-auth-operator
+
+      - name: Package Helm chart
+        run: |
+          helm package charts/nats-auth-operator -d .helm-packages
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push Helm chart to GHCR
+        run: |
+          for pkg in .helm-packages/*.tgz; do
+            if [ -f "$pkg" ]; then
+              helm push "$pkg" oci://ghcr.io/${{ github.repository_owner }}/charts
+            fi
+          done
+
+      - name: Create GitHub Pages branch if not exists
+        run: |
+          git fetch origin gh-pages || git checkout --orphan gh-pages
+          git checkout main
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: charts
+          skip_existing: true
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_SKIP_EXISTING: true
+
+      - name: Generate index for GitHub Pages
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          helm repo index . --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          git add index.yaml
+          git commit -m "Update Helm repository index" || echo "No changes to commit"
+          git push origin gh-pages || echo "No changes to push"

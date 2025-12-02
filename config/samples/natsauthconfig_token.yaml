@@ -1,0 +1,18 @@
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAuthConfig
+metadata:
+  name: token-auth
+  namespace: default
+spec:
+  # URL for NATS clients
+  natsURL: "nats://nats.default.svc.cluster.local:4222"
+
+  # Authentication mode: token
+  mode: token
+
+  # Where to write the server auth configuration
+  serverAuthConfig:
+    name: "nats-token-auth"
+    namespace: "default"
+    key: "auth.conf"
+    type: "ConfigMap"

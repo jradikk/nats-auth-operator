@@ -1,0 +1,18 @@
+apiVersion: v2
+name: nats-auth-operator
+description: A Kubernetes operator for managing NATS authentication using JWT and token-based auth
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - nats
+  - authentication
+  - operator
+  - jwt
+  - kubernetes
+home: https://github.com/jradikk/nats-auth-operator
+sources:
+  - https://github.com/jradikk/nats-auth-operator
+maintainers:
+  - name: jradikk
+    url: https://github.com/jradikk

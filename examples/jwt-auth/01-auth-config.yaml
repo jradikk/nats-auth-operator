@@ -1,0 +1,63 @@
+---
+# NatsAuthConfig for JWT-based authentication
+# This creates the NATS operator and writes JWTs to a Secret
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAuthConfig
+metadata:
+  name: main
+  namespace: default
+spec:
+  # NATS server URL that clients will use
+  natsURL: "nats://nats.default.svc.cluster.local:4222"
+
+  # Authentication mode: jwt (full operator/account/user hierarchy)
+  mode: jwt
+
+  # Where to write the JWT credentials
+  # The operator will write individual keys for operator and each account
+  # This Secret will be referenced by your NATS Helm values
+  serverAuthConfig:
+    name: "nats-auth-jwts"  # Secret name that NATS Helm chart references
+    namespace: "default"
+    type: "Secret"
+
+  # JWT-specific configuration
+  jwt:
+    # Name for the NATS operator
+    operatorName: "MyOperator"
+
+    # Optional: Use an existing operator seed
+    # If not specified, a new operator keypair will be generated
+    # and stored in a Secret named: <authconfig-name>-operator-seed
+    #
+    # operatorSeedSecret:
+    #   name: "my-operator-seed"
+    #   namespace: "default"
+    #   key: "operator.seed"
+
+---
+# The operator will create a Secret with this structure:
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: nats-auth-jwts
+#   namespace: default
+# data:
+#   operator: <base64-encoded-operator-JWT>
+#   myapp-account: <base64-encoded-account-JWT>
+#   system-account: <base64-encoded-account-JWT>
+#   # ... one key per account
+#
+# Reference these in your NATS Helm values using environment variables:
+# container:
+#   env:
+#     NATS_OPERATOR_JWT:
+#       valueFrom:
+#         secretKeyRef:
+#           name: nats-auth-jwts
+#           key: operator
+#     NATS_MYAPP_ACCOUNT_JWT:
+#       valueFrom:
+#         secretKeyRef:
+#           name: nats-auth-jwts
+#           key: myapp-account

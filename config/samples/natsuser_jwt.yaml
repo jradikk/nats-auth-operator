@@ -1,0 +1,38 @@
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: ingest-worker
+  namespace: default
+spec:
+  # Reference to the NatsAuthConfig
+  authConfigRef:
+    name: main
+    namespace: default
+
+  # Authentication type: jwt, token, or inherit
+  authType: jwt
+
+  # Account reference (required for JWT mode)
+  accountRef:
+    name: app-account
+    namespace: default
+
+  # Optional username (defaults to resource name)
+  username: "ingest-worker"
+
+  # Permissions
+  permissions:
+    publishAllow:
+      - "ingest.service.>"
+      - "events.>"
+    publishDeny: []
+    subscribeAllow:
+      - "ingest.responses.>"
+      - "commands.ingest.>"
+    subscribeDeny:
+      - "admin.>"
+
+  # Optional: reference to existing user seed
+  # existingSeedSecret:
+  #   name: "my-user-seed"
+  #   namespace: "default"

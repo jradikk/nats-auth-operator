@@ -1,0 +1,119 @@
+---
+# Publisher User - Can only publish messages
+# Use case: Services that send events, metrics, or logs
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: publisher
+  namespace: default
+spec:
+  authConfigRef:
+    name: token-auth
+  authType: token
+  username: "publisher"
+
+  # Auto-generate a secure password
+  passwordFrom:
+    generate: true
+
+  # Permissions: Can publish to events and metrics
+  permissions:
+    publishAllow:
+      - "events.>"          # All events subjects
+      - "metrics.>"         # All metrics subjects
+      - "logs.app.>"        # Application logs
+    publishDeny: []
+
+    # No subscribe permissions (publish-only)
+    subscribeAllow: []
+    subscribeDeny:
+      - ">"                 # Deny all subscriptions
+
+---
+# Subscriber User - Can only read messages
+# Use case: Monitoring, analytics, logging services
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: subscriber
+  namespace: default
+spec:
+  authConfigRef:
+    name: token-auth
+  authType: token
+  username: "subscriber"
+
+  passwordFrom:
+    generate: true
+
+  # Permissions: Can subscribe but not publish
+  permissions:
+    publishAllow: []
+    publishDeny:
+      - ">"                 # Deny all publishing
+
+    subscribeAllow:
+      - "events.>"          # All events
+      - "metrics.>"         # All metrics
+      - "logs.>"            # All logs
+    subscribeDeny: []
+
+---
+# Admin User - Full access to all subjects
+# Use case: Administrative tools, debugging, system management
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: admin
+  namespace: default
+spec:
+  authConfigRef:
+    name: token-auth
+  authType: token
+  username: "admin"
+
+  passwordFrom:
+    generate: true
+
+  # Permissions: Full access
+  permissions:
+    publishAllow:
+      - ">"                 # All subjects
+    publishDeny: []
+    subscribeAllow:
+      - ">"                 # All subjects
+    subscribeDeny: []
+
+---
+# Service-specific user example
+# Use case: Microservice with limited permissions
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsUser
+metadata:
+  name: order-service
+  namespace: default
+spec:
+  authConfigRef:
+    name: token-auth
+  authType: token
+  username: "order-service"
+
+  passwordFrom:
+    generate: true
+
+  # Permissions: Only order-related subjects
+  permissions:
+    publishAllow:
+      - "orders.created"
+      - "orders.updated"
+      - "orders.completed"
+      - "orders.cancelled"
+      - "notifications.order.>"  # Can send notifications
+    publishDeny: []
+
+    subscribeAllow:
+      - "orders.commands.>"      # Listen for order commands
+      - "payments.completed"     # Listen for payment events
+      - "inventory.updated"      # Listen for inventory changes
+    subscribeDeny:
+      - "orders.internal.>"      # Deny internal order subjects

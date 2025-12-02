@@ -1,0 +1,66 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: rumpus
+  labels:
+    control-plane: controller-manager
+    app.kubernetes.io/name: nats-auth-operator
+    app.kubernetes.io/component: manager
+spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: controller-manager
+      imagePullSecrets:
+      - name: rumpus-gitea-registry
+      containers:
+      - name: manager
+        image: gitea.e.excomunicado.fun/excomunicado/dev/nats-auth-operator:0.1.1
+        imagePullPolicy: Always
+        command:
+        - /manager
+        args:
+        - --leader-elect
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        volumeMounts:
+        - name: resolver-dir
+          mountPath: /var/lib/nats-resolver
+      volumes:
+      - name: resolver-dir
+        emptyDir: {}
+      terminationGracePeriodSeconds: 10

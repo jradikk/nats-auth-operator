@@ -1,0 +1,33 @@
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAuthConfig
+metadata:
+  name: main
+  namespace: default
+spec:
+  # URL for NATS clients
+  natsURL: "nats://nats.default.svc.cluster.local:4222"
+
+  # Authentication mode: jwt, token, or mixed
+  mode: jwt
+
+  # Where to write the server auth configuration
+  serverAuthConfig:
+    name: "nats-auth-config"
+    namespace: "default"
+    key: "auth.conf"
+    type: "ConfigMap"
+
+  # JWT-specific configuration
+  jwt:
+    # Directory where resolver JWTs are stored
+    resolverDir: "/var/lib/nats-resolver"
+
+    # Optional: reference to existing operator seed
+    # If not provided, a new operator will be created
+    # operatorSeedSecret:
+    #   name: "nats-operator-seed"
+    #   namespace: "default"
+    #   key: "operator.seed"
+
+    # Name for the NATS operator
+    operatorName: "NATS Operator"

@@ -1,0 +1,9 @@
+# CRD manifests will be generated here by running: make manifests
+#
+# This directory will contain:
+# - nats.example.com_natsauthconfigs.yaml
+# - nats.example.com_natsaccounts.yaml
+# - nats.example.com_natsusers.yaml
+#
+# To generate CRDs, run:
+# make manifests

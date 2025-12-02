@@ -1,0 +1,29 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nats-auth-operator.fullname" . }}-manager-rolebinding
+  labels:
+    {{- include "nats-auth-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nats-auth-operator.fullname" . }}-manager-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "nats-auth-operator.controllerManagerServiceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nats-auth-operator.fullname" . }}-proxy-rolebinding
+  labels:
+    {{- include "nats-auth-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nats-auth-operator.fullname" . }}-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "nats-auth-operator.controllerManagerServiceAccountName" . }}
+  namespace: {{ .Release.Namespace }}

@@ -1,0 +1,215 @@
+---
+# Publisher Application
+# This app publishes events to NATS using the publisher credentials
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: publisher-app
+  namespace: default
+  labels:
+    app: publisher-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: publisher-app
+  template:
+    metadata:
+      labels:
+        app: publisher-app
+    spec:
+      containers:
+      - name: publisher
+        image: natsio/nats-box:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Publisher starting..."
+          echo "NATS URL: $NATS_URL"
+          echo "Username: $NATS_USER"
+
+          # Construct connection string
+          NATS_CONN="nats://$NATS_USER:$NATS_PASSWORD@nats.default.svc.cluster.local:4222"
+
+          # Publish events in a loop
+          counter=0
+          while true; do
+            counter=$((counter + 1))
+
+            # Publish to events subject
+            echo "Publishing event #$counter"
+            nats-pub -s "$NATS_CONN" "events.user.login" "{\"user\":\"user$counter\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+
+            # Publish metrics
+            nats-pub -s "$NATS_CONN" "metrics.cpu.usage" "{\"value\":$((RANDOM % 100)),\"host\":\"publisher-app\"}"
+
+            sleep 5
+          done
+        env:
+        - name: NATS_URL
+          valueFrom:
+            secretKeyRef:
+              name: publisher-user-creds
+              key: NATS_URL
+        - name: NATS_USER
+          valueFrom:
+            secretKeyRef:
+              name: publisher-user-creds
+              key: USERNAME
+        - name: NATS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: publisher-user-creds
+              key: PASSWORD
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+
+---
+# Subscriber Application
+# This app subscribes to events from NATS using the subscriber credentials
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscriber-app
+  namespace: default
+  labels:
+    app: subscriber-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: subscriber-app
+  template:
+    metadata:
+      labels:
+        app: subscriber-app
+    spec:
+      containers:
+      - name: subscriber
+        image: natsio/nats-box:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Subscriber starting..."
+          echo "NATS URL: $NATS_URL"
+          echo "Username: $NATS_USER"
+
+          # Construct connection string
+          NATS_CONN="nats://$NATS_USER:$NATS_PASSWORD@nats.default.svc.cluster.local:4222"
+
+          echo "Listening for events on 'events.>' ..."
+
+          # Subscribe to all events
+          nats-sub -s "$NATS_CONN" "events.>" &
+
+          # Subscribe to metrics
+          echo "Listening for metrics on 'metrics.>' ..."
+          nats-sub -s "$NATS_CONN" "metrics.>" &
+
+          # Keep container running
+          wait
+        env:
+        - name: NATS_URL
+          valueFrom:
+            secretKeyRef:
+              name: subscriber-user-creds
+              key: NATS_URL
+        - name: NATS_USER
+          valueFrom:
+            secretKeyRef:
+              name: subscriber-user-creds
+              key: USERNAME
+        - name: NATS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: subscriber-user-creds
+              key: PASSWORD
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+
+---
+# Order Service Example
+# Demonstrates a microservice with specific subject permissions
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: default
+  labels:
+    app: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: service
+        image: natsio/nats-box:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Order Service starting..."
+          NATS_CONN="nats://$NATS_USER:$NATS_PASSWORD@nats.default.svc.cluster.local:4222"
+
+          # Subscribe to order commands
+          echo "Listening for order commands..."
+          nats-sub -s "$NATS_CONN" "orders.commands.>" | while read line; do
+            echo "Received command: $line"
+
+            # Process and publish order created event
+            nats-pub -s "$NATS_CONN" "orders.created" \
+              "{\"order_id\":\"$(date +%s)\",\"status\":\"created\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+          done &
+
+          # Subscribe to payment completed events
+          echo "Listening for payment events..."
+          nats-sub -s "$NATS_CONN" "payments.completed" | while read line; do
+            echo "Payment completed: $line"
+
+            # Update order status
+            nats-pub -s "$NATS_CONN" "orders.updated" \
+              "{\"status\":\"paid\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+          done &
+
+          wait
+        env:
+        - name: NATS_URL
+          valueFrom:
+            secretKeyRef:
+              name: order-service-user-creds
+              key: NATS_URL
+        - name: NATS_USER
+          valueFrom:
+            secretKeyRef:
+              name: order-service-user-creds
+              key: USERNAME
+        - name: NATS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: order-service-user-creds
+              key: PASSWORD
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi

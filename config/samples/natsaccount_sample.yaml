@@ -1,0 +1,41 @@
+apiVersion: nats.jradikk/v1alpha1
+kind: NatsAccount
+metadata:
+  name: app-account
+  namespace: default
+spec:
+  # Reference to the NatsAuthConfig (must be JWT mode)
+  authConfigRef:
+    name: main
+    namespace: default
+
+  # Description of the account
+  description: "Account for application services"
+
+  # Resource limits for the account
+  limits:
+    # Maximum number of connections (-1 = unlimited)
+    conn: 100
+
+    # Maximum number of subscriptions (-1 = unlimited)
+    subs: 1000
+
+    # Maximum message payload size in bytes (-1 = unlimited)
+    payload: 1048576  # 1 MB
+
+    # Maximum data size in bytes (-1 = unlimited)
+    data: -1
+
+    # Maximum number of exports (-1 = unlimited)
+    exports: -1
+
+    # Maximum number of imports (-1 = unlimited)
+    imports: -1
+
+    # Allow wildcards in exports
+    wildcardExports: true
+
+  # Optional: reference to existing account seed
+  # existingSeedSecret:
+  #   name: "my-account-seed"
+  #   namespace: "default"

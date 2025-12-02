@@ -4,6 +4,7 @@ description: A Kubernetes operator for managing NATS authentication using JWT an
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+icon: https://nats.io/img/logos/nats-icon-color.png
 keywords:
   - nats
   - authentication

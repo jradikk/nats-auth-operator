@@ -28,6 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -50,11 +51,15 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var watchNamespace string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&watchNamespace, "namespace", "",
+		"Restrict the manager to a single namespace. Empty means cluster wide, which is the "+
+			"previous behaviour and stays the default.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -63,8 +68,23 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// Scoping the cache is what actually restricts the manager: the controllers read through it,
+	// so a namespace absent from here is invisible to them and its resources are never reconciled.
+	// Callers that scope this way should also narrow the RBAC to a Role in the same namespace,
+	// otherwise the process keeps cluster wide rights it can no longer use.
+	//
+	// Note for anyone adopting this: cross namespace references stop resolving. A NatsAccount or
+	// NatsUser whose authConfigRef points at another namespace, or a NatsAuthConfig whose
+	// serverAuthConfig lives elsewhere, cannot be read by a scoped manager.
+	cacheOptions := cache.Options{}
+	if watchNamespace != "" {
+		cacheOptions.DefaultNamespaces = map[string]cache.Config{watchNamespace: {}}
+		setupLog.Info("restricting manager to a single namespace", "namespace", watchNamespace)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme: scheme,
+		Cache:  cacheOptions,
 		Metrics: metricsserver.Options{
 			BindAddress: metricsAddr,
 		},

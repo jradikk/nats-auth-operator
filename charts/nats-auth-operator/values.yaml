@@ -20,7 +20,9 @@ controllerManager:
   manager:
     image:
       repository: jradikk/nats-auth-operator
-      tag: latest
+      # Empty on purpose: the deployment falls back to .Chart.AppVersion, so the image moves with
+      # the chart instead of floating on whatever :latest points at on the day of the release.
+      tag: ""
     resources:
       limits:
         cpu: 500m
@@ -45,7 +47,8 @@ controllerManager:
 # Kubernetes RBAC proxy sidecar
 kubeRbacProxy:
   image:
-    repository: gcr.io/kubebuilder/kube-rbac-proxy
+    # gcr.io/kubebuilder no longer serves this image: pulls fail with "manifest unknown".
+    repository: registry.k8s.io/kubebuilder/kube-rbac-proxy
     tag: v0.15.0
   resources:
     limits:
@@ -147,3 +150,14 @@ affinity: {}
 # Enable leader election for controller manager
 leaderElection:
   enabled: true
+
+# Restrict the controller to the namespace it is released into.
+#
+# Off by default, so existing installs keep watching the whole cluster. Turning it on scopes the
+# manager's cache to one namespace and renders its RBAC as a Role instead of a ClusterRole, which
+# lets several independent instances coexist - one per namespace that owns its own NATS.
+#
+# Two things stop working when this is on, both by design: cross namespace references
+# (authConfigRef or serverAuthConfig pointing outside the namespace) cannot be resolved, and the
+# instance no longer reconciles resources anywhere else.
+namespaced: false

@@ -1,7 +1,17 @@
+{{/*
+The manager role follows the manager's own scope. With namespaced=true the controller only ever
+reads and writes in its own namespace, so cluster wide rights would be rights it cannot use.
+The two roles below stay cluster scoped whatever this is set to: kube-rbac-proxy calls
+tokenreviews and subjectaccessreviews, which are cluster scoped, and metrics-reader guards a
+non resource URL.
+*/}}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: {{ ternary "Role" "ClusterRole" .Values.namespaced }}
 metadata:
   name: {{ include "nats-auth-operator.fullname" . }}-manager-role
+  {{- if .Values.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
   labels:
     {{- include "nats-auth-operator.labels" . | nindent 4 }}
 rules:
@@ -111,7 +121,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "nats-auth-operator.fullname" . }}-metrics-reader
+  name: {{ include "nats-auth-operator.clusterScopedName" (list . "metrics-reader") }}
   labels:
     {{- include "nats-auth-operator.labels" . | nindent 4 }}
 rules:
@@ -123,7 +133,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "nats-auth-operator.fullname" . }}-proxy-role
+  name: {{ include "nats-auth-operator.clusterScopedName" (list . "proxy-role") }}
   labels:
     {{- include "nats-auth-operator.labels" . | nindent 4 }}
 rules:

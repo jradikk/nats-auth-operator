@@ -117,6 +117,7 @@ The following table lists the configurable parameters of the NATS Auth Operator 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `leaderElection.enabled` | Enable leader election | `true` |
+| `namespaced` | Restrict the controller to its own namespace | `false` |
 | `nameOverride` | Override chart name | `""` |
 | `fullnameOverride` | Override full name | `""` |
 
@@ -369,3 +370,29 @@ Contributions are welcome! Please see the main repository [CONTRIBUTING.md](../.
 ## License
 
 See [LICENSE](../../LICENSE) for license information.
+
+## Running one controller per namespace
+
+By default the controller watches the whole cluster, and that stays the default. Setting
+`namespaced: true` scopes its cache to the namespace it is released into and renders its manager
+RBAC as a `Role` instead of a `ClusterRole`:
+
+```yaml
+namespaced: true
+```
+
+This lets several instances coexist, one per namespace that owns its own NATS server, without them
+reconciling each other's resources. It is also a smaller blast radius for a controller whose job is
+minting credentials.
+
+Two consequences, both intended:
+
+- Cross namespace references stop resolving. A `NatsAccount` or `NatsUser` whose `authConfigRef`
+  points outside its own namespace, or a `NatsAuthConfig` whose `serverAuthConfig` lives elsewhere,
+  is invisible to a scoped controller.
+- The instance reconciles nothing outside its namespace, so every namespace that needs the operator
+  needs its own release.
+
+The operator seed is unaffected: it is stored in a Secret in the `NatsAuthConfig`'s own namespace,
+so moving or scoping a controller does not regenerate it and existing JWTs stay valid.
+

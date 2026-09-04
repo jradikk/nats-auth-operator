@@ -70,3 +70,21 @@ Controller manager service account name
 {{- printf "%s-controller-manager" (include "nats-auth-operator.fullname" .) }}
 {{- end }}
 {{- end }}
+
+{{/*
+Name for the objects that stay cluster scoped even in namespaced mode.
+
+Cluster scoped names are global, so two namespaced releases that happen to share a release name
+would fight over them and Helm refuses the second install. Qualifying with the namespace makes
+several scoped instances installable without the operator having to know about each other. Cluster
+wide mode is left exactly as it was, so existing installs see no rename.
+*/}}
+{{- define "nats-auth-operator.clusterScopedName" -}}
+{{- $root := index . 0 -}}
+{{- $suffix := index . 1 -}}
+{{- if $root.Values.namespaced -}}
+{{ include "nats-auth-operator.fullname" $root }}-{{ $suffix }}-{{ $root.Release.Namespace }}
+{{- else -}}
+{{ include "nats-auth-operator.fullname" $root }}-{{ $suffix }}
+{{- end -}}
+{{- end }}

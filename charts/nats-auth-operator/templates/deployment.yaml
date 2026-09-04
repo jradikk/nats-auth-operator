@@ -54,6 +54,9 @@ spec:
         {{- if .Values.leaderElection.enabled }}
         - --leader-elect
         {{- end }}
+        {{- if .Values.namespaced }}
+        - --namespace={{ .Release.Namespace }}
+        {{- end }}
         command:
         - /manager
         livenessProbe:

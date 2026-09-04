@@ -2,8 +2,8 @@ apiVersion: v2
 name: nats-auth-operator
 description: A Kubernetes operator for managing NATS authentication using JWT and token-based auth
 type: application
-version: 0.3.0
-appVersion: "0.2.0"
+version: 0.4.0
+appVersion: "1.2.0"
 icon: https://nats.io/img/logos/nats-icon-color.png
 keywords:
   - nats

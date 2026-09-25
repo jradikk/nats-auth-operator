@@ -55,6 +55,7 @@ The following table lists the configurable parameters of the NATS Auth Operator 
 | `controllerManager.manager.resources.limits.memory` | Memory limit | `128Mi` |
 | `controllerManager.manager.resources.requests.cpu` | CPU request | `10m` |
 | `controllerManager.manager.resources.requests.memory` | Memory request | `64Mi` |
+| `controllerManager.manager.extraArgs` | Extra flags for the manager, e.g. `--zap-devel=false`, `--zap-log-level=error` | `[]` |
 | `controllerManager.manager.containerSecurityContext` | Security context for manager container | See values.yaml |
 | `controllerManager.serviceAccount.annotations` | Annotations for controller manager service account | `{}` |
 

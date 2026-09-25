@@ -30,6 +30,9 @@ controllerManager:
       requests:
         cpu: 10m
         memory: 64Mi
+    # Extra flags for /manager, appended after the chart's own. For example quieter JSON logs:
+    # ["--zap-devel=false", "--zap-log-level=error"]
+    extraArgs: []
     # Security context for the manager container
     containerSecurityContext:
       allowPrivilegeEscalation: false

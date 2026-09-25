@@ -57,6 +57,9 @@ spec:
         {{- if .Values.namespaced }}
         - --namespace={{ .Release.Namespace }}
         {{- end }}
+        {{- range .Values.controllerManager.manager.extraArgs }}
+        - {{ . | quote }}
+        {{- end }}
         command:
         - /manager
         livenessProbe:
